@@ -31,10 +31,6 @@ export class Wishlist {
   owner: User;
 
   @Column()
-  @Length(1, 1500)
-  description: string;
-
-  @Column()
   @IsUrl()
   image: string;
 

@@ -6,6 +6,8 @@ import {
   UpdateDateColumn,
   ManyToOne,
   OneToMany,
+  Generated,
+  VirtualColumn,
 } from 'typeorm';
 import { Length, IsUrl } from 'class-validator';
 import { User } from 'src/users/entities/users.entity';
@@ -37,7 +39,11 @@ export class Wish {
   @Column({ type: 'decimal', scale: 2 })
   price: number;
 
-  @Column({ type: 'decimal', scale: 2 })
+  @VirtualColumn({
+    query: (alias) =>
+      `SELECT SUM(amount) FROM offer WHERE "itemId" = ${alias}.id`,
+    type: 'numeric',
+  })
   raised: number;
 
   @ManyToOne(() => User, (user) => user.wishes)
@@ -50,9 +56,6 @@ export class Wish {
   @OneToMany(() => Offer, (offer) => offer.item)
   offers: Offer[];
 
-  @Column()
+  @Column({ default: 0 })
   copied: number;
 }
-
-// ○ owner — ссылка на пользователя, который добавил пожелание подарка. 
-// ○ offers — массив ссылок на заявки скинуться от других пользователей.

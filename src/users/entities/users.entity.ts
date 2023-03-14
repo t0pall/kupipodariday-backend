@@ -9,7 +9,6 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-  OneToOne,
 } from 'typeorm';
 
 @Entity()
@@ -45,13 +44,9 @@ export class User {
   @OneToMany(() => Wish, (wish) => wish.owner)
   wishes: Wish[];
 
-  @OneToOne(() => Offer, (offer) => offer.user)
-  offers: Offer;
+  @OneToMany(() => Offer, (offer) => offer.user)
+  offers: Offer[];
 
   @OneToMany(() => Wishlist, (wishlist) => wishlist.owner)
   wishlists: Wishlist[];
 }
-
-// ○ wishes — список желаемых подарков. Используйте для него соответствующий тип связи.
-// ○ offers — содержит список подарков, на которые скидывается пользователь. Установите для него подходящий тип связи.
-// ○ Wishlists - содержит список вишлистов, которые создал пользователь. Установите для него подходящий тип связи.

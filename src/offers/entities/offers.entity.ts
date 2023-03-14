@@ -6,12 +6,10 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToOne,
   ManyToOne,
-  JoinColumn,
 } from 'typeorm';
 
-@Entity()
+@Entity({ name: 'offer' })
 export class Offer {
   @PrimaryGeneratedColumn()
   id: number;
@@ -22,8 +20,7 @@ export class Offer {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToOne(() => User)
-  @JoinColumn()
+  @ManyToOne(() => User, (user) => user.offers)
   user: User;
 
   @ManyToOne(() => Wish, (wish) => wish.offers)
@@ -35,6 +32,3 @@ export class Offer {
   @Column({ default: false })
   hidden: boolean;
 }
-
-// ○ user содержит id желающего скинуться;
-// ○ item содержит ссылку на товар;

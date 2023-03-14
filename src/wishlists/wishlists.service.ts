@@ -1,27 +1,72 @@
 import { Injectable } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common/exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/users/entities/users.entity';
+import { appErrors } from 'src/utils/app-errors';
+import { WishesService } from 'src/wishes/wishes.service';
 import { Repository } from 'typeorm';
+import { CreateWishlistDto } from './dto/create-wishlist-dto';
+import { UpdateWishlistDto } from './dto/update-wishlist-dto';
 import { Wishlist } from './entities/wishlists.entity';
 
 @Injectable()
 export class WishlistsService {
   constructor(
     @InjectRepository(Wishlist)
-    private offerRepository: Repository<Wishlist>,
+    private readonly wishlistsRepository: Repository<Wishlist>,
+    private readonly wishesService: WishesService,
   ) {}
 
-  create() {}
+  async create(dto: CreateWishlistDto, owner: User) {
+    const items = [];
+    const { image, name } = dto;
+    for (const itemId of dto.itemsId) {
+      items.push(await this.wishesService.findOne(itemId));
+    }
+    return await this.wishlistsRepository.save({
+      image,
+      name,
+      owner,
+      items,
+    });
+  }
 
-  findOne() {}
+  async findAll() {
+    return await this.wishlistsRepository.find({
+      relations: { items: true },
+    });
+  }
 
-  findMany() {}
+  async findOne(id: number) {
+    return await this.wishlistsRepository.findOne({
+      relations: { items: true },
+      where: { id },
+    });
+  }
 
-  updateOne() {}
+  async updateOne(id: number, dto: UpdateWishlistDto, user: User) {
+    const wishlist = await this.wishlistsRepository.findOne({
+      where: { id },
+      relations: { owner: true },
+    });
+    const items = await this.wishesService.findManyById(
+      dto.itemsId as number[],
+    );
+    if (user.id !== wishlist.owner.id) {
+      throw new BadRequestException(appErrors.WRONG_DATA);
+    }
+    await this.wishlistsRepository.update(id, { ...dto, items });
+    return await this.wishlistsRepository.findOneBy({ id });
+  }
 
-  removeOne() {}
+  async remove(id: number, user: User) {
+    const wishlist = await this.wishlistsRepository.findOne({
+      where: { id },
+      relations: { owner: true },
+    });
+    if (user.id !== wishlist.owner.id) {
+      throw new BadRequestException(appErrors.WRONG_DATA);
+    }
+    return await this.wishlistsRepository.remove(wishlist);
+  }
 }
-
-// ○ создания (create),
-// ○ поиска по условию одной (findOne) или нескольких записей,
-// ○ обновления (updateOne) для одной записи,
-// ○ удаления (removeOne) для одной записи.
