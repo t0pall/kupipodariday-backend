@@ -47,16 +47,26 @@ export class WishlistsService {
   async updateOne(id: number, dto: UpdateWishlistDto, user: User) {
     const wishlist = await this.wishlistsRepository.findOne({
       where: { id },
-      relations: { owner: true },
+      relations: { owner: true, items: true },
     });
-    const items = await this.wishesService.findManyById(
-      dto.itemsId as number[],
-    );
-    if (user.id !== wishlist.owner.id) {
+    let items;
+    if (dto.itemsId) {
+      items = await this.wishesService.findManyById(dto.itemsId as number[]);
+    }
+    if (user.id !== wishlist?.owner?.id) {
       throw new BadRequestException(appErrors.WRONG_DATA);
     }
-    await this.wishlistsRepository.update(id, { ...dto, items });
-    return await this.wishlistsRepository.findOneBy({ id });
+    await this.wishlistsRepository.save({
+      id: wishlist.id,
+      items: items ? items : wishlist.items,
+      name: dto.name ? dto.name : wishlist?.name,
+      image: dto.image ? dto.image : wishlist?.image,
+      owner: wishlist.owner,
+    });
+    return await this.wishlistsRepository.findOne({
+      where: { id },
+      relations: { owner: true, items: true },
+    });
   }
 
   async remove(id: number, user: User) {

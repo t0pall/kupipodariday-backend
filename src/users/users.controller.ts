@@ -25,7 +25,7 @@ export class UsersController {
   @UseGuards(JwtGuard)
   @Patch('me')
   update(@Req() req, @Body() body) {
-    return this.usersService.updateOne(req.user.id, body);
+    return this.usersService.updateOne(req.user, body);
   }
 
   @UseGuards(JwtGuard)

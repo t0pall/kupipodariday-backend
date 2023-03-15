@@ -1,12 +1,14 @@
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/users.entity';
 import { appErrors } from 'src/utils/app-errors';
-import { FindOptionsOrder, Repository, ArrayContains, In } from 'typeorm';
+import { FindOptionsOrder, Repository, In } from 'typeorm';
 import { CreateWishDto } from './dto/create-wish.dto';
 import { UpdateWishDto } from './dto/update-wish.dto';
 import { Wish } from './entities/wishes.entity';
@@ -54,6 +56,11 @@ export class WishesService {
       relations: { owner: true, offers: true },
       where: { id },
     });
+    if (dto.price && wish.raised > 0) {
+      throw new ForbiddenException(
+        'Вы не можете изменять стоимость подарка, если уже есть желающие скинуться',
+      );
+    }
     if (wish?.owner?.id !== userId || wish.offers.length) {
       throw new BadRequestException(appErrors.WRONG_DATA);
     }
@@ -78,6 +85,12 @@ export class WishesService {
 
   async copy(id: number, user: User) {
     const wish = await this.wishesRepository.findOneBy({ id });
+    const isAdded = (await this.wishesRepository.findOne({
+      where: { owner: { id: user.id }, name: wish.name },
+    }))
+      ? true
+      : false;
+    if (isAdded) throw new ConflictException(appErrors.WRONG_DATA);
     wish.owner = user;
     delete wish.id;
     return await this.wishesRepository.save(wish);

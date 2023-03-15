@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { BadRequestException } from '@nestjs/common/exceptions';
+import {
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common/exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -30,10 +33,29 @@ export class UsersService {
     return user;
   }
 
-  async updateOne(id: number, dto: UpdateUserDto) {
-    if (dto.password) dto.password = await this.hashPassword(dto.password);
+  async updateOne(user: User, dto: UpdateUserDto) {
+    const { id } = user;
+    const { email, username } = dto;
+    if (dto.password) {
+      dto.password = await this.hashPassword(dto.password);
+    }
+    const isExist = (await this.usersRepository.findOne({
+      where: [{ email }, { username }],
+    }))
+      ? true
+      : false;
+
+    if (isExist) {
+      throw new ConflictException(
+        'Пользователь с таким email или username уже зарегистрирован',
+      );
+    }
     try {
-      return await this.usersRepository.update(id, dto);
+      await this.usersRepository.update(id, dto);
+      const { password, ...updUser } = await this.usersRepository.findOneBy({
+        id,
+      });
+      return updUser;
     } catch (_) {
       throw new BadRequestException(appErrors.WRONG_DATA);
     }

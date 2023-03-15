@@ -18,10 +18,16 @@ export class OffersService {
 
   async create(dto: CreateOfferDto, user: User) {
     const item = await this.wishesService.findOne(dto.itemId);
-    if (+item.raised + dto.amount > item.price) {
+    if (+item.raised + dto.amount > item.price || item.owner.id === user.id) {
       throw new BadRequestException(appErrors.WRONG_DATA);
     }
-    return await this.offerRepository.save({ user, item, ...dto });
+    const { id } = await this.offerRepository.save({
+      user,
+      item,
+      ...dto,
+    });
+
+    return await this.offerRepository.findBy({ id });
   }
 
   async findOne(id: number) {
@@ -32,8 +38,3 @@ export class OffersService {
     return await this.offerRepository.find();
   }
 }
-
-// ○ создания (create),
-// ○ поиска по условию одной (findOne) или нескольких записей,
-// ○ обновления (updateOne) для одной записи,
-// ○ удаления (removeOne) для одной записи.
